@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Document</title>
+</head>
+<body>
+
+    <script src="https://unpkg.com/axios/dist/axios.js"></script>
+
+    <script>
+        async function getUsers(token){
+            const res = await axios.get('https://hack-or-snooze-v3.herokuapp.com/users',{params: { token}});
+            console.log(res);
+        }  
+        async function  signUp(username, password, name){
+            const res = await axios.post('https://hack-or-snooze-v3.herokuapp.com/signup',{user: {
+                name, username, password
+            } });
+            console.log(res);
+        } 
+        async function  login(username, password){
+            const res = await axios.post('https://hack-or-snooze-v3.herokuapp.com/login',{user: {
+                name, username, password
+            } });
+            console.log(res);
+            return res.data.token;
+        }    
+        // signUp('alexthecat4','alexcat444','mike');    
+        async function getUsersWithAuth(){   
+            const token = await login('alexthecat2','alexcat444');
+            getUsers(token);
+        }
+        // login('alexthecat2','alexcat444');
+        async function createStory(){
+            const token = await login('alexthecat2','alexcat444');
+            const newStory = {
+                token,
+                story: {
+                    author: 'Buttesfars',
+                    title:"a chickfasfasen in distresss",
+                    url: 'http://chickens4lyfe.com'
+                }
+            }
+            const res = await axios.post('https://hack-or-snooze-v3.herokuapp.com/stories', newStory);
+            console.log(res);
+        }
+        // {
+        // "token": "YOUR_TOKEN_HERE",
+        // "story": {
+        //     "author": "Matt Lane",
+        //     "title": "The best story ever",
+        //     "url": "http://google.com"
+        // }
+        // }
+
+        // getUsersWithAuth();
+        createStory();
+
+    </script>
+</body>
+</html>
