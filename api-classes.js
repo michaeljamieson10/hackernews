@@ -47,24 +47,21 @@ class StoryList {
     // TODO - Implement this functions!
     // this function should return the newly created story so it can be used in
     // the script.js file where it will be appended to the DOM
-    const token = localStorage.getItem("token");
-
-    console.log(newStory)
-    console.log(user, "3")
-    console.log("IM INSIDE ADD STORY")
+    if (!user.loginToken || !user) return null
     const response = await axios.post(`${BASE_URL}/stories`, newStory);
-    
-  //   const response = await axios.post(`${BASE_URL}/stories`, {
-  //     token,
-  //     story: {
-  //         author: 'Buttesfars',
-  //         title:"a chickfasfasen in distresss",
-  //         url: 'http://chickens4lyfe.com'
-  //     }
-  // });
-    console.log(response);
-
+    const story = new Story(response.data.story);
+    return story
   }
+  static async removeStory(user, newStory) {
+    if (!user.loginToken || !user) return null
+    const response = await axios.delete(`${BASE_URL}/stories/${newStory}`,{data:{
+        token: user.loginToken
+      }
+    })
+    console.log(response);
+  }
+  
+
 }
   
 // create story from hack or snooze
@@ -145,7 +142,6 @@ class User {
 
     // attach the token to the newUser instance for convenience
     existingUser.loginToken = response.data.token;
-    // console.log(existingUser.loginToken);
     return existingUser;
   }
 
@@ -177,16 +173,40 @@ class User {
     existingUser.ownStories = response.data.user.stories.map(s => new Story(s));
     return existingUser;
   }
+  
+  
+  static async addFavoriteStory(user, storyId){
+    
+    const response = await axios.post(`${BASE_URL}/users/${user.username}/favorites/${storyId}`, {
+      token : user.loginToken
+    })
+    const existingUser = new User(response.data.user);
 
-  favoriteStory(){
-    console.log("CAT");
+    existingUser.favorites = response.data.user.favorites.map(s => new Story(s));
+    return existingUser.favorites;
+      // https://hack-or-snooze-v3.herokuapp.com/users/username/favorites/storyId)
+
+  }
+  static async deleteFavoriteStory(user, storyId){
+    
+    const response = await axios.delete(`${BASE_URL}/users/${user.username}/favorites/${storyId}`, {data:{
+      token : user.loginToken
+    }
+    })
+    const existingUser = new User(response.data.user);
+
+    existingUser.favorites = response.data.user.favorites.map(s => new Story(s));
+    return existingUser.favorites;
+
+
+      // https://hack-or-snooze-v3.herokuapp.com/users/username/favorites/storyId)
+
   }
 }
 
 /**
  * Class to represent a single story.
  */
-//class called with getStories() trying to call it with addStories()
 class Story {
 
   /**

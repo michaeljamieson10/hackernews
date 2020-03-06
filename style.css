@@ -10,7 +10,7 @@ h1 {
   font-size: 1.1rem;
   margin: 0;
 }
-
+  
 h4 {
   font-size: 1rem;
   margin: 0;
@@ -43,6 +43,8 @@ nav {
   align-items: center;
   padding: 5px 20px;
   border-radius: 3px 3px 0 0;
+  
+  
 }
 
 .main-nav-links {
@@ -57,6 +59,8 @@ nav {
 .nav-right {
   margin-left: auto;
 }
+
+
 
 .container {
   display: flex;
