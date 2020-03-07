@@ -14,7 +14,11 @@ $(async function() {
   const $navmyStories = $("#nav-mystories");
   const $usernameLogout = $("#username-logout");
   const $favoriteStories = $("#favorited-articles");
-
+  const $navUserProfile = $("#nav-user-profile");
+  const $userProfile = $('#user-profile');
+  const $profileName = $('#profile-name');
+  const $userName = $("#profile-username");
+  const $accountCreated = $("#profile-account-date");
 
   // global storyList variable
   let storyList = null;
@@ -127,17 +131,16 @@ $(async function() {
     $loginForm.slideToggle(); 
     $createAccountForm.slideToggle();
     $allStoriesList.toggle();
+    $userProfile.removeClass('container');
 
   });
   $createStory.on("click",  async function() {
     await generateStories()
 
     $createArticleForm.slideToggle();
-    $allStoriesList.toggle();
+    $allStoriesList.show();
     $ownStories.hide();
-    $ownStories.hide();
-
-
+    $userProfile.removeClass('container');
 
   });
   $navFavorites.on("click", async function() {
@@ -145,6 +148,9 @@ $(async function() {
     $allStoriesList.hide();
     $favoriteStories.show();
     $ownStories.hide();
+    $createArticleForm.slideUp();
+    $userProfile.removeClass('container');
+
 
   });
   $navmyStories.on("click", async function() {
@@ -152,14 +158,29 @@ $(async function() {
     $favoriteStories.hide();
     $allStoriesList.hide();
     $ownStories.show();
+    $createArticleForm.slideUp();
+    $userProfile.removeClass('container');
 
   });
+  $navUserProfile.on("click", function(){
+    $allStoriesList.empty();
+    $favoriteStories.empty();
+    $ownStories.empty();
+    $userProfile.addClass('container');
+    $profileName.text(`Name: ${currentUser.name}`);
+    $userName.text(`Username: ${currentUser.username}`);
+    $accountCreated.text(`Account Created: ${getAccountDate(currentUser.createdAt)}`);
+    
+
+  })
 
   /**
    * Event handler for Navigation to Homepage
    */
 
   $("body").on("click", "#nav-all", async function() {
+    $userProfile.removeClass('container');
+
     hideElements();
     await generateStories();
     $allStoriesList.show();
@@ -251,6 +272,7 @@ $(async function() {
     $ownStories.empty();
     for (let story of currentUser.ownStories) {
       const result = generateStoryHTML(story);
+      console.log(generateStoryHTML.myStoriesTrash())
       $ownStories.append(result);
     }
   }
@@ -277,13 +299,13 @@ $(async function() {
     `);
 // far fa-star
     function favoriteStoryOrNot() {
-      if(currentUser !== null){
-        for (let storyFav of currentUser.favorites) {
-          if(storyFav.storyId === story.storyId){
-            return 'fas fa-star';
-          }
+        if(currentUser !== null){
+          for (let storyFav of currentUser.favorites) {
+            if(storyFav.storyId === story.storyId){
+              return 'fas fa-star';
+            }
+          } 
         } 
-      } 
         return 'far fa-star';
       }
     function myStoriesTrash(){
@@ -310,18 +332,31 @@ $(async function() {
       $filteredArticles,
       $ownStories,
       $loginForm,
-      $createAccountForm
+      $createAccountForm,
+      $favoriteStories,
+      $createArticleForm
     ];
     elementsArr.forEach($elem => $elem.hide());
   }
 
   function showNavForLoggedInUser() {
     $navLogin.hide();
-    $navLogOut.show();
-    $createStory.show();
+    const elementsArr = [
+      $navLogOut,
+      $createStory,
+      $navFavorites,
+      $navmyStories,
+      $navUserProfile,
+      $('span')
+    ];
+    elementsArr.forEach($elem => $elem.show());
+    // console.log(elementsArr);
+    // $navLogOut.show();
+    // $createStory.show();
+    // $navFavorites.show();
+    // $navmyStories.show();
+    // $navUserProfile.show();
     $usernameLogout.html(currentUser.username);
-    $navFavorites.show();
-    $navmyStories.toggle();
     $('span').show();
 
 
@@ -340,6 +375,17 @@ $(async function() {
       hostName = hostName.slice(4);
     }
     return hostName;
+  }
+// Simple function to pull the account date from the account created property from user.
+  function getAccountDate(createdDate){
+    let accountDateCreated;
+    let thirdTry;
+    console.log(createdDate);
+    accountDateCreated = createdDate.split("T");
+    console.log(accountDateCreated[0]);
+    return accountDateCreated[0];
+     
+      
   }
 
   /* sync current user information to localStorage */
