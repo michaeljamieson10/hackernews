@@ -88,8 +88,11 @@ $(async function() {
     //Creates a story with the database
     await StoryList.addStory(currentUser, newStory); //this is a class's method to add a story to the database
 
-
+    //generates all stories and their html and adds it to the webpage
     await generateStories()
+
+    checkIfLoggedIn() //refreshes user which updates the user, allowing my story to be updated
+
   });
 
 
@@ -123,20 +126,23 @@ $(async function() {
     // refresh the page, clearing memory
     location.reload();
   });
-
+/**
+ * Star Functionality
+ * on click
+ */
   $(document).on("click", ".star",  async function(e){
-    let $storyId = $(this).parent().attr("id");
+    let $storyId = $(this).parent().attr("id"); //grabs the parent's id of the star (li) 
+    //checks the class if has a filled in star
     if ($(this).children("i").hasClass('fas fa-star')){
-      $(this).children("i").attr('class', 'far fa-star')
-     currentUser.favorites = await User.deleteFavoriteStory(currentUser, $storyId);
-
-
+      $(this).children("i").attr('class', 'far fa-star') // changes it to an empty star
+      //removes the favorite from the users favorite list
+     currentUser.favorites = await User.deleteFavoriteStory(currentUser, $storyId); 
     }else{
+      //fills in star 
       $(this).children("i").attr('class', 'fas fa-star');
-      currentUser.favorites = await User.addFavoriteStory(currentUser, $storyId);
-
+      //adds the favorite from the users favorite list
+      currentUser.favorites = await User.addFavoriteStory(currentUser, $storyId); 
     }
-
   });
 
   /**
@@ -151,65 +157,60 @@ $(async function() {
     $userProfile.removeClass('container');
 
   });
+
   $navCreateArticle.on("click",  async function() {
-    await generateStories()
-
-    $createArticleForm.slideToggle();
-    $allStoriesList.show();
-    $ownStories.hide();
-    $userProfile.removeClass('container');
-
+    hideElements() // hides other elements and removes the profile container
+    await generateStories() //creates a list of stories
+    $allStoriesList.show(); //shows all stories from generate stories
+    $createArticleForm.slideToggle();//opens up create article form
   });
-  $navFavorites.on("click", async function() {
-    await generateFavoriteStories()
-    $allStoriesList.hide();
-    $favoriteStories.show();
-    $ownStories.hide();
-    $createArticleForm.slideUp();
-    $userProfile.removeClass('container');
 
-
+  $navFavorites.on("click", function() {
+    hideElements(); // hides other elements and removes the profile container
+    generateFavoriteStories() // creates a list of favorite stories
+    $favoriteStories.show(); // shows all favorited stories that we created when we fill in a star by clicking on it
   });
-  $navMyStories.on("click", async function() {
-    await generateMyStories();
-    $favoriteStories.hide();
-    $allStoriesList.hide();
+
+  $navMyStories.on("click", function() {
+    hideElements(); // hides other elements and removes the profile container
+    generateMyStories();
     $ownStories.show();
-    $createArticleForm.slideUp();
-    $userProfile.removeClass('container');
 
-    $(document).on("click", ".trash-can", async function(e){
-      let $storyId = $(this).parent().attr("id");
-      $(this).parent().remove();
-      await StoryList.removeStory(currentUser, $storyId);
-      await generateStories()
-
-      
-    })
-
+    //creates a garbage can logo that if clicked will remove from DOM and database
+    createGarbageCan()
+    
   });
-  $navUserProfile.on("click", function(){
-    $allStoriesList.empty();
-    $favoriteStories.empty();
-    $ownStories.empty();
-    $ownStories.hide();
-    $allStoriesList.hide();
 
+  function createGarbageCan() {
+      $(document).on("click", ".trash-can", async function(e){
+        if(currentUser.ownStories.length === 0){
+          $ownStories.text("No Stories Owned.");
+        }else{
+          //targets the li of the story (the entire story)
+          let $storyId = $(this).parent().attr("id");
+          //removes the li from the dom
+          $(this).parent().remove();
+          //removes from the database
+          await StoryList.removeStory(currentUser, $storyId);
+          checkIfLoggedIn() //refreshes user
+        }
+    })
+  }
+  
+  $navUserProfile.on("click", function(){
+    hideElements(); // hides other elements and removes the profile container
     $userProfile.addClass('container');
     $profileName.text(`Name: ${currentUser.name}`);
     $profileUserName.text(`Username: ${currentUser.username}`);
-    $profileAccountDate.text(`Account Created: ${getAccountDate(currentUser.createdAt)}`);
-    
-
+    $profileAccountDate.text(`Account Created: ${getAccountDate(currentUser.createdAt)}`);  
   })
-
+  
+ 
   /**
    * Event handler for Navigation to Homepage
    */
 
   $("body").on("click", "#nav-all", async function() {
-    $userProfile.removeClass('container');
-
     hideElements();
     await generateStories();
     $allStoriesList.show();
@@ -269,7 +270,6 @@ $(async function() {
     $allStoriesList.empty();
     $favoriteStories.empty();
 
-
     // loop through all of our stories and generate HTML for them
     for (let story of storyList.stories) {
       const result = generateStoryHTML(story);
@@ -277,8 +277,8 @@ $(async function() {
     }
   }
  
-  async function generateFavoriteStories() {
-    // set our storyList to current User
+  function generateFavoriteStories() {
+    // set our storyList to current User's favorites
     storyList = currentUser.favorites;
     // empty out that part of the page
     $allStoriesList.empty();
@@ -294,20 +294,25 @@ $(async function() {
     }
   }
   
-  async function generateMyStories() {
+ function generateMyStories() {
+    // set our storyList to current User's stories
     storyList = currentUser.ownStories;
+    //empty the list from other lists and any previous user's stories list
     $allStoriesList.empty();
     $favoriteStories.empty();
     $ownStories.empty();
-      if(currentUser.favorites.length === 0){
+
+      //if user's own stories is empty change text to no stories owned
+      if(currentUser.ownStories.length === 0){
         $ownStories.text("No Stories Owned.");
       }else{
+      //if user's story is not empty add the stories to the DOM
         for (let story of currentUser.ownStories) {
-
+          //creates html for the stories
           const result = generateStoryHTML(story);
+          //adds a trashcan button for the user's stories
           result.prepend( `<span class="trash-can"><i class="fa fa-trash"></i></span>` );
-          console.log(result)
-
+          //adds result to DOM
           $ownStories.append(result);
         }
     }
@@ -332,7 +337,9 @@ $(async function() {
         <small class="article-username">posted by ${story.username}</small>
       </li>
     `);
-// far fa-star
+
+
+// adds a filled in star depending if in user's favorite
     function favoriteStoryOrNot() {
         if(currentUser !== null){
           for (let storyFav of currentUser.favorites) {
@@ -348,7 +355,8 @@ $(async function() {
       return storyMarkup;
   }
 
-  /* hide all elements in elementsArr */
+  /* hide all elements in elementsArr and
+   removes container class from userPRofile */
 
   function hideElements() {
     const elementsArr = [
@@ -362,8 +370,9 @@ $(async function() {
       $createArticleForm
     ];
     elementsArr.forEach($elem => $elem.hide());
+    $userProfile.removeClass('container');
   }
-
+//show all nav elements for a logged in user
   function showNavForLoggedInUser() {
     $navLogin.hide();
     const elementsArr = [
@@ -375,16 +384,8 @@ $(async function() {
       $('span')
     ];
     elementsArr.forEach($elem => $elem.show());
-    // console.log(elementsArr);
-    // $navLogOut.show();
-    // $createStory.show();
-    // $navFavorites.show();
-    // $navMyStories.show();
-    // $navUserProfile.show();
     $navUsernameText.html(currentUser.username);
     $('span').show();
-
-
   }
 
   /* simple function to pull the hostname from a URL */
@@ -401,16 +402,11 @@ $(async function() {
     }
     return hostName;
   }
-// Simple function to pull the account date from the account created property from user.
+// Extract the account date from the account created property from user.
   function getAccountDate(createdDate){
     let accountDateCreated;
-    let thirdTry;
-    console.log(createdDate);
     accountDateCreated = createdDate.split("T");
-    console.log(accountDateCreated[0]);
     return accountDateCreated[0];
-     
-      
   }
 
   /* sync current user information to localStorage */

@@ -47,21 +47,24 @@ class StoryList {
     // TODO - Implement this functions!
     // this function should return the newly created story so it can be used in
     // the script.js file where it will be appended to the DOM
+    //check if user
     if (!user.loginToken || !user) return null
+    //post to data base story info 
     const response = await axios.post(`${BASE_URL}/stories`, newStory);
+    //creates a new story from response from database
     const story = new Story(response.data.story);
+    
     return story
   }
   static async removeStory(user, newStory) {
+    //check if user
     if (!user.loginToken || !user) return null
+
     const response = await axios.delete(`${BASE_URL}/stories/${newStory}`,{data:{
         token: user.loginToken
       }
     })
-    console.log(response);
   }
-  
-
 }
   
 // create story from hack or snooze
@@ -174,32 +177,35 @@ class User {
     return existingUser;
   }
   
-  
+  // Insert a storyId and make it a favorite
   static async addFavoriteStory(user, storyId){
-    
+    //sends storyID to database and creates a post request response
     const response = await axios.post(`${BASE_URL}/users/${user.username}/favorites/${storyId}`, {
       token : user.loginToken
     })
+    //favorite data user to existing user variable
     const existingUser = new User(response.data.user);
-
+    //update favorites variable
     existingUser.favorites = response.data.user.favorites.map(s => new Story(s));
+
     return existingUser.favorites;
-      // https://hack-or-snooze-v3.herokuapp.com/users/username/favorites/storyId)
 
   }
+
+  //delete the favorite story
   static async deleteFavoriteStory(user, storyId){
     
-    const response = await axios.delete(`${BASE_URL}/users/${user.username}/favorites/${storyId}`, {data:{
-      token : user.loginToken
-    }
-    })
+    //sends storyID to database and creates a delete request response
+    const response = await axios.delete(`${BASE_URL}/users/${user.username}/favorites/${storyId}`, 
+      {data:{
+        token : user.loginToken
+            }
+      })
+    //favorite data user to existing user variable
     const existingUser = new User(response.data.user);
-
+    //update favorites variable
     existingUser.favorites = response.data.user.favorites.map(s => new Story(s));
     return existingUser.favorites;
-
-
-      // https://hack-or-snooze-v3.herokuapp.com/users/username/favorites/storyId)
 
   }
 }
