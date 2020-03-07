@@ -1,24 +1,36 @@
 $(async function() {
   // cache some selectors we'll be using quite a bit
-  const $allStoriesList = $("#all-articles-list");
   const $submitForm = $("#submit-form");
   const $filteredArticles = $("#filtered-articles");
   const $loginForm = $("#login-form");
-  const $createAccountForm = $("#create-account-form");
-  const $ownStories = $("#my-articles");
+  
+  //nav bar links/buttons
   const $navLogin = $("#nav-login");
   const $navLogOut = $("#nav-logout");
-  const $createStory = $("#create-story");
-  const $createArticleForm = $("#create-article-form");
+  const $navCreateArticle = $("#nav-create-article");
   const $navFavorites = $("#nav-favorites");
-  const $navmyStories = $("#nav-mystories");
-  const $usernameLogout = $("#username-logout");
-  const $favoriteStories = $("#favorited-articles");
+  const $navMyStories = $("#nav-mystories");
   const $navUserProfile = $("#nav-user-profile");
+  const $navUsernameText = $("#nav-username-text");
+
+  
+  //create forms that create new stories and accounts
+  const $createArticleForm = $("#create-article-form");
+  const $createAccountForm = $("#create-account-form");
+  
+  //makes story list for all, favorites, my own
+  const $allStoriesList = $("#all-articles-list");
+  const $favoriteStories = $("#favorited-articles");
+  const $ownStories = $("#my-articles");  
+  
+  //user profile section
   const $userProfile = $('#user-profile');
+
+  //profile when clicked on nav user
   const $profileName = $('#profile-name');
-  const $userName = $("#profile-username");
-  const $accountCreated = $("#profile-account-date");
+  const $profileUserName = $("#profile-username");
+  const $profileAccountDate = $("#profile-account-date");
+
 
   // global storyList variable
   let storyList = null;
@@ -42,20 +54,28 @@ $(async function() {
 
     // call the login static method to build a user instance
     const userInstance = await User.login(username, password);
+
     // set the global user to the user instance
     currentUser = userInstance;
+    
     syncCurrentUserToLocalStorage();
     loginAndSubmitForm();
   });
 
-  $createArticleForm.on("submit", async function(evt) {
-    evt.preventDefault();
-    const token = localStorage.getItem("token");
 
+//event listener for creating story opens up a form
+//where user can create a new article
+
+  $createArticleForm.on("submit", async function(evt) {
+    evt.preventDefault();//prevents page reload
+    const token = localStorage.getItem("token"); // in order to add story it is required to add token
+
+   // takes value from articles' form
     const title = $("#create-title").val();
     const url = $("#create-url").val();
     const author = $("#create-author").val();
    
+  // creates an object that matches format to send request
     const newStory = {
           token,
           story: {
@@ -65,7 +85,10 @@ $(async function() {
           }
       }
 
-    const story = await StoryList.addStory(currentUser, newStory);
+    //Creates a story with the database
+    await StoryList.addStory(currentUser, newStory); //this is a class's method to add a story to the database
+
+
     await generateStories()
   });
 
@@ -116,12 +139,6 @@ $(async function() {
 
   });
 
-  $(document).on("click", ".trash-can", async function(e){
-    let $storyId = $(this).parent().attr("id");
-    $(this).parent().remove();
-    await StoryList.removeStory(currentUser, $storyId);
-    
-  })
   /**
    * Event Handler for Clicking Login
    */
@@ -134,7 +151,7 @@ $(async function() {
     $userProfile.removeClass('container');
 
   });
-  $createStory.on("click",  async function() {
+  $navCreateArticle.on("click",  async function() {
     await generateStories()
 
     $createArticleForm.slideToggle();
@@ -153,7 +170,7 @@ $(async function() {
 
 
   });
-  $navmyStories.on("click", async function() {
+  $navMyStories.on("click", async function() {
     await generateMyStories();
     $favoriteStories.hide();
     $allStoriesList.hide();
@@ -161,15 +178,27 @@ $(async function() {
     $createArticleForm.slideUp();
     $userProfile.removeClass('container');
 
+    $(document).on("click", ".trash-can", async function(e){
+      let $storyId = $(this).parent().attr("id");
+      $(this).parent().remove();
+      await StoryList.removeStory(currentUser, $storyId);
+      await generateStories()
+
+      
+    })
+
   });
   $navUserProfile.on("click", function(){
     $allStoriesList.empty();
     $favoriteStories.empty();
     $ownStories.empty();
+    $ownStories.hide();
+    $allStoriesList.hide();
+
     $userProfile.addClass('container');
     $profileName.text(`Name: ${currentUser.name}`);
-    $userName.text(`Username: ${currentUser.username}`);
-    $accountCreated.text(`Account Created: ${getAccountDate(currentUser.createdAt)}`);
+    $profileUserName.text(`Username: ${currentUser.username}`);
+    $profileAccountDate.text(`Account Created: ${getAccountDate(currentUser.createdAt)}`);
     
 
   })
@@ -270,10 +299,17 @@ $(async function() {
     $allStoriesList.empty();
     $favoriteStories.empty();
     $ownStories.empty();
-    for (let story of currentUser.ownStories) {
-      const result = generateStoryHTML(story);
-      console.log(generateStoryHTML.myStoriesTrash())
-      $ownStories.append(result);
+      if(currentUser.favorites.length === 0){
+        $ownStories.text("No Stories Owned.");
+      }else{
+        for (let story of currentUser.ownStories) {
+
+          const result = generateStoryHTML(story);
+          result.prepend( `<span class="trash-can"><i class="fa fa-trash"></i></span>` );
+          console.log(result)
+
+          $ownStories.append(result);
+        }
     }
   }
  
@@ -287,7 +323,6 @@ $(async function() {
     // render story markup
     const storyMarkup = $(`
       <li id="${story.storyId}">
-        ${myStoriesTrash()}
         <span class="star"><i class="${favoriteStoryOrNot()}"></i></span>
         <a class="article-link" href="${story.url}" target="a_blank">
           <strong>${story.title}</strong>
@@ -308,17 +343,7 @@ $(async function() {
         } 
         return 'far fa-star';
       }
-    function myStoriesTrash(){
-      if(currentUser !== null){
-        for(myStory of currentUser.ownStories){
-          if(myStory.storyId === story.storyId){
-            return '<span class="trash-can"><i class="fa fa-trash" aria-hidden="true"></i></span>'
-          }
-        }
-        return ''
-      }
-      return ''
-    }
+    
 
       return storyMarkup;
   }
@@ -343,9 +368,9 @@ $(async function() {
     $navLogin.hide();
     const elementsArr = [
       $navLogOut,
-      $createStory,
+      $navCreateArticle,
       $navFavorites,
-      $navmyStories,
+      $navMyStories,
       $navUserProfile,
       $('span')
     ];
@@ -354,9 +379,9 @@ $(async function() {
     // $navLogOut.show();
     // $createStory.show();
     // $navFavorites.show();
-    // $navmyStories.show();
+    // $navMyStories.show();
     // $navUserProfile.show();
-    $usernameLogout.html(currentUser.username);
+    $navUsernameText.html(currentUser.username);
     $('span').show();
 
 
